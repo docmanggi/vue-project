@@ -1,45 +1,50 @@
 import { defineStore } from 'pinia'
-import { useLocalStorage } from '../composables/useLocalStorage'
+import { ref } from 'vue'
+import axios from 'axios'
 
-export const useTaskStore = defineStore('task', () => {
-  // Check if we have saved data in the browser
-  const savedData = localStorage.getItem('capstone-tasks')
+export const useTaskStore = defineStore('task', () =>{
+  const tasks = ref([])
+
+  const apiUrl = 'https://69d6684d1c120e733cce2aff.mockapi.io/:endpoint'
   
-  // Set the default backup data
-  const defaultTasks = [
-    { id: 1, title: 'Finish Vue OJT', completed: false },
-    { id: 2, title: 'Deploy to Netlify', completed: false }
-  ]
-
-  // If saved data exists, load it. Otherwise, use the defaults.
-  const tasks = ref(savedData ? JSON.parse(savedData) : defaultTasks)
-
-  // Watch the tasks array for any changes and save them instantly
-  watch(tasks, (newTasks) => {
-    localStorage.setItem('capstone-tasks', JSON.stringify(newTasks))
-  }, { deep: true }) // Deep true ensures it catches changes inside the objects
-
-  function addTask(title) {
-    if (title.trim() !== '') {
-      const newTask = {
-        id: Date.now(),
-        title: title,
-        completed: false
-      }
-      tasks.value.push(newTask)
+  async function fetchTasks() {
+    try {
+      const response = await axios.get(apiUrl)
+      tasks.value = response.data
+    } catch (error) {
+      console.error('Failed to load tasks', error)
     }
   }
+  async function addTask(title) {
+  if (title.trim() === '') return
 
-  function removeTask(taskId) {
+  try {
+    const response = await axios.post(apiUrl, { title: title, completed: false })
+    tasks.value.push(response.data)
+} 
+catch (error) {
+  console.error('Failed to add task', error)
+}
+}
+async function removeTask(taskId) {
+  try {
+    await axios.delete(`${apiUrl}/${taskId}`)
     tasks.value = tasks.value.filter(task => task.id !== taskId)
+  } catch (error) {
+    console.error('Failed to remove task', error)
   }
+}
 
-  function toggleTaskStatus(taskId) {
-    const task = tasks.value.find(task => task.id === taskId)
-    if (task) {
-      task.completed = !task.completed
-    }
+async function toggleTaskStatus(task) {
+try {
+  const response = await axios.put(`${apiUrl}/${task.id}`, { ...task, completed: !task.completed })
+  const index = tasks.value.findIndex(t => t.id === task.id)
+  if (index !== -1) {
+    tasks.value[index] = response.data
   }
-
-  return { tasks, addTask, removeTask, toggleTaskStatus }
+} catch (error) {
+  console.error('Failed to toggle task status', error)
+}
+}
+  return { tasks, fetchTasks, addTask, removeTask, toggleTaskStatus }
 })
