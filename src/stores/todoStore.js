@@ -5,7 +5,7 @@ import axios from 'axios'
 export const useTaskStore = defineStore('task', () =>{
   const tasks = ref([])
 
-  const apiUrl = 'https://69d6684d1c120e733cce2aff.mockapi.io/:endpoint'
+  const apiUrl = 'https://69d6684d1c120e733cce2aff.mockapi.io/tasks'
   
   async function fetchTasks() {
     try {
